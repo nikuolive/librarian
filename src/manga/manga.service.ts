@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { exec } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { extname, parse } from 'node:path';
 import { joinPathWithEnv } from 'src/utils';
@@ -185,6 +186,8 @@ export class MangaService {
             const filebase = `${joinPathWithEnv(path)}/${
               parse(file.name).base
             }`;
+            const folderExist = existsSync(filename)
+            if (folderExist) break
             console.log(filename);
             console.log(filebase);
             exec(`unzip -d "${filename}" "${filebase}"`, (error, stdout, stderr) => {
@@ -228,8 +231,8 @@ export class MangaService {
       tempChapter.manga = manga;
       tempChapter.path = `${path}/${file}`;
     } else if (chapterNumberMatch) {
-      tempChapter.chapterNumber = Number(chapterNumberMatch[0]);
-      tempChapter.title = chapterNumberMatch[0];
+      tempChapter.chapterNumber = Number(chapterNumberMatch[0].slice(-2));
+      tempChapter.title = chapterNumberMatch[0].slice(-2);
       tempChapter.isVolume = false;
       tempChapter.manga = manga;
       tempChapter.path = `${path}/${file}`;
