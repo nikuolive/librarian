@@ -47,6 +47,7 @@ export class MangaService {
     });
     const count = await this.mangaRepository.count();
     const list = [];
+    console.log(mangaList)
     for (const manga of mangaList) {
       const coverList = await this.mangaCoverRepository.find({
         where: { manga: manga.id },
@@ -55,7 +56,10 @@ export class MangaService {
       const cover = coverList.map((cover) => {
         return (({ path, coverNumber, manga, ...o }) => o)(cover);
       });
-      const dto: MangaDto = { id: manga.id, title: manga.title, cover: cover };
+      const dto: MangaDto = new MangaDto()
+      dto.id = manga.id
+      dto.title = manga.title
+      dto.cover = cover
       list.push(dto);
     }
     return { manga: list, totalPages: Math.max(count / 10, 1), page: page };
@@ -145,7 +149,6 @@ export class MangaService {
 
           const saved = await this.mangaRepository.save(tempManga);
           console.log(saved);
-          this.scanChapter(saved.id);
           let mangaId = -1;
           let manga = null;
 
@@ -159,8 +162,10 @@ export class MangaService {
             mangaId = mangaExist.id;
           }
 
-          if ((mangaExist && options.rescan) || manga) {
-            this.scanPage(mangaId);
+          if (options.scan) {
+            if ((mangaExist && options.rescan) || manga) {
+              this.scanChapter(mangaId, options);
+            }
           }
         }
       }
@@ -186,29 +191,37 @@ export class MangaService {
             const filebase = `${joinPathWithEnv(path)}/${
               parse(file.name).base
             }`;
-            const folderExist = existsSync(filename)
-            if (folderExist) break
+            const folderExist = existsSync(filename);
+            if (folderExist) break;
             console.log(filename);
             console.log(filebase);
-            exec(`unzip -d "${filename}" "${filebase}"`, (error, stdout, stderr) => {
-              if (error) {
-                console.log(`error: ${error.message}`);
-                return;
-              }
-              if (stderr) {
-                console.log(`stderr: ${stderr}`);
-                return;
-              }
-              if (stdout) {
-                console.log(`stdout: ${stdout}`);
-                this.createChapter(path, parse(file.name).name, manga, options)
-              }
-            });
+            exec(
+              `unzip -d "${filename}" "${filebase}"`,
+              (error, stdout, stderr) => {
+                if (error) {
+                  console.log(`error: ${error.message}`);
+                  return;
+                }
+                if (stderr) {
+                  console.log(`stderr: ${stderr}`);
+                  return;
+                }
+                if (stdout) {
+                  console.log(`stdout: ${stdout}`);
+                  this.createChapter(
+                    path,
+                    parse(file.name).name,
+                    manga,
+                    options,
+                  );
+                }
+              },
+            );
           } else if (
             file.isDirectory() &&
             file.name.toLocaleLowerCase() !== 'covers'
           ) {
-            this.createChapter(path, file.name, manga, options)
+            this.createChapter(path, file.name, manga, options);
           }
         }
       } catch {
@@ -237,6 +250,7 @@ export class MangaService {
       tempChapter.manga = manga;
       tempChapter.path = `${path}/${file}`;
     }
+    console.log('-----------temp-chapter----------');
     console.log(tempChapter);
 
     let chapterId = -1;
@@ -248,13 +262,17 @@ export class MangaService {
     });
     if (!chapterExist) {
       chapter = await this.mangaChapterRepository.save(tempChapter);
+      console.log('-----------saved-chapter----------');
+      console.log(chapter);
       chapterId = chapter.id;
     } else {
       chapterId = chapterExist.id;
     }
 
-    if ((chapterExist && options.rescan) || chapter) {
-      this.scanPage(chapterId);
+    if (options.scan) {
+      if ((chapterExist && options.rescan) || chapter) {
+        this.scanPage(chapterId);
+      }
     }
   }
 
@@ -327,6 +345,7 @@ export class MangaService {
 
   async scanPage(id: number) {
     const mangaChapter = await this.mangaChapterRepository.findOne({ id: id });
+    console.log(mangaChapter)
     if (mangaChapter) {
       const path = mangaChapter.path;
       const files = await readdir(joinPathWithEnv(path), {
@@ -335,17 +354,49 @@ export class MangaService {
       try {
         let pageNumber = 1;
         for (const file of files) {
-          console.log(file);
-          const page = new MangaPage();
-          page.pageNumber = pageNumber;
-          page.path = `${path}/${file.name}`;
-          page.mangaChapter = mangaChapter;
-          await this.mangaPageRepository.save(page);
-          pageNumber++;
+          if (
+            file.isDirectory() &&
+            file.name.toLocaleLowerCase() !== 'covers'
+          ) {
+
+            const newPath = `${path}/${file.name}`
+            console.log(joinPathWithEnv(newPath))
+            const files2 = await readdir(joinPathWithEnv(newPath), {
+              withFileTypes: true,
+            });
+            for (const file2 of files2) {
+              this.createPage(
+                file2,
+                pageNumber++,
+                newPath,
+                mangaChapter,
+              );
+            }
+          } else {
+            this.createPage(file, pageNumber++, path, mangaChapter);
+          }
         }
       } catch {
         throw new BadRequestException();
       }
+    }
+  }
+
+  async createPage(file, pageNumber, path, mangaChapter) {
+    console.log(file);
+    const tempPage = new MangaPage();
+    tempPage.pageNumber = pageNumber;
+    tempPage.path = `${path}/${file.name}`;
+    tempPage.mangaChapter = mangaChapter;
+    await this.mangaPageRepository.save(tempPage);
+    let page = null;
+
+    const pageExist = await this.mangaPageRepository.findOne({
+      path: tempPage.path,
+      mangaChapter: tempPage.mangaChapter,
+    });
+    if (!pageExist) {
+      page = await this.mangaChapterRepository.save(tempPage);
     }
   }
 

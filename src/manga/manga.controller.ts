@@ -20,31 +20,44 @@ import { Response as Res, Request as Req } from 'express';
 import { promisify } from 'util';
 import * as etag from 'etag';
 import { joinPathWithEnv } from 'src/utils';
+import { ScanOptionsDto } from './dto/scan-options.dto';
 
 @Controller('manga')
 export class MangaController {
-
   constructor(private readonly mangaService: MangaService) {}
 
   @Get()
   findAll(@Query('page') page: number) {
     if (page === undefined) {
-      throw new BadRequestException('No query provided')
+      throw new BadRequestException('No query provided');
     }
     return this.mangaService.findManga(page);
   }
 
-  @Get('scan')
-  scan() {
-    return this.mangaService.scan();
+  @Post('scan')
+  scan(@Body() scanOptionsDto: ScanOptionsDto) {
+    if (scanOptionsDto) {
+      return this.mangaService.scan(scanOptionsDto);
+    } else {
+      return this.mangaService.scan();
+    }
   }
 
-  @Get('scan-chapter/:id')
-  scanChapter(@Param('id') id: number) {
-    this.mangaService.scanChapter(id);
+  @Post('scan-chapter/:id')
+  scanChapter(@Param('id') id: number, @Body() scanOptionsDto: ScanOptionsDto) {
+    if (scanOptionsDto) {
+      this.mangaService.scanChapter(id, scanOptionsDto);
+    } else {
+      this.mangaService.scanChapter(id);
+    }
   }
 
-  @Get('scan-cover/:id')
+  @Post('scan-page/:id')
+  scanPage(@Param('id') id: number) {
+    this.mangaService.scanPage(id);
+  }
+
+  @Post('scan-cover/:id')
   scanCover(@Param('id') id: number) {
     this.mangaService.scanCover(id);
   }

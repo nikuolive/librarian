@@ -1,3 +1,4 @@
 export interface ScanOptions {
-    rescan: boolean
+  scan?: boolean;
+  rescan?: boolean;
 }
