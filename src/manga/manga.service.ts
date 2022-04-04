@@ -62,7 +62,7 @@ export class MangaService {
       dto.cover = cover
       list.push(dto);
     }
-    return { manga: list, totalPages: Math.max(count / 10, 1), page: page };
+    return { manga: list, totalPages: Math.max(Math.ceil(count / 10), 1), page: page };
   }
 
   findOne(id: number) {
@@ -192,7 +192,7 @@ export class MangaService {
               parse(file.name).base
             }`;
             const folderExist = existsSync(filename);
-            if (folderExist) break;
+            if (folderExist) continue;
             console.log(filename);
             console.log(filebase);
             exec(
