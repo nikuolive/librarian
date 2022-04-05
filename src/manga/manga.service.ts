@@ -256,6 +256,7 @@ export class MangaService {
     }
     console.log('-----------temp-chapter----------');
     console.log(tempChapter);
+    console.log('---------------------------------');
 
     let chapterId = -1;
     let chapter = null;
@@ -268,6 +269,7 @@ export class MangaService {
       chapter = await this.mangaChapterRepository.save(tempChapter);
       console.log('-----------saved-chapter----------');
       console.log(chapter);
+      console.log('----------------------------------');
       chapterId = chapter.id;
     } else {
       chapterId = chapterExist.id;
@@ -349,7 +351,7 @@ export class MangaService {
 
   async scanPage(id: number) {
     const mangaChapter = await this.mangaChapterRepository.findOne({ id: id });
-    console.log(mangaChapter)
+    console.log(mangaChapter);
     if (mangaChapter) {
       const path = mangaChapter.path;
       const files = await readdir(joinPathWithEnv(path), {
@@ -362,19 +364,13 @@ export class MangaService {
             file.isDirectory() &&
             file.name.toLocaleLowerCase() !== 'covers'
           ) {
-
-            const newPath = `${path}/${file.name}`
-            console.log(joinPathWithEnv(newPath))
+            const newPath = `${path}/${file.name}`;
+            console.log(joinPathWithEnv(newPath));
             const files2 = await readdir(joinPathWithEnv(newPath), {
               withFileTypes: true,
             });
             for (const file2 of files2) {
-              this.createPage(
-                file2,
-                pageNumber++,
-                newPath,
-                mangaChapter,
-              );
+              this.createPage(file2, pageNumber++, newPath, mangaChapter);
             }
           } else {
             this.createPage(file, pageNumber++, path, mangaChapter);
@@ -392,7 +388,6 @@ export class MangaService {
     tempPage.pageNumber = pageNumber;
     tempPage.path = `${path}/${file.name}`;
     tempPage.mangaChapter = mangaChapter;
-    await this.mangaPageRepository.save(tempPage);
     let page = null;
 
     const pageExist = await this.mangaPageRepository.findOne({
@@ -400,7 +395,10 @@ export class MangaService {
       mangaChapter: tempPage.mangaChapter,
     });
     if (!pageExist) {
-      page = await this.mangaChapterRepository.save(tempPage);
+      page = await this.mangaPageRepository.save(tempPage);
+      console.log('-----------saved-chapter----------');
+      console.log(page);
+      console.log('----------------------------------');
     }
   }
 
