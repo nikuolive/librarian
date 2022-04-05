@@ -27,11 +27,12 @@ export class MangaController {
   constructor(private readonly mangaService: MangaService) {}
 
   @Get()
-  findAll(@Query('page') page: number) {
+  findAll(@Query('page') page: number, @Query('query') query: string) {
     if (page === undefined) {
       throw new BadRequestException('No query provided');
     }
-    return this.mangaService.findManga(page);
+    console.log(query)
+    return this.mangaService.findManga(page, query !== undefined ? query : "");
   }
 
   @Post('scan')

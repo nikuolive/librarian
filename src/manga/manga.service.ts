@@ -38,17 +38,23 @@ export class MangaService {
     return { manga: await this.mangaRepository.find() };
   }
 
-  async findManga(page: number) {
+  async findManga(page: number, query: string) {
     const limit = 10;
     const searchPage = page - 1;
-    const mangaList = await this.mangaRepository.find({
-      skip: limit * searchPage,
-      take: limit,
-    });
-    const count = await this.mangaRepository.count();
+    const mangaList = await this.mangaRepository
+      .createQueryBuilder('manga')
+      .where('manga.title ILIKE :query', { query: `%${query}%` })
+      .skip(limit * searchPage)
+      .take(limit)
+      .getManyAndCount();
+    // ({
+    //   skip: limit * searchPage,
+    //   take: limit,
+    // });
+    const count = mangaList[1]
     const list = [];
     console.log(mangaList);
-    for (const manga of mangaList) {
+    for (const manga of mangaList[0]) {
       const coverList = await this.mangaCoverRepository.find({
         where: { manga: manga.id },
       });
