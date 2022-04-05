@@ -47,7 +47,7 @@ export class MangaService {
     });
     const count = await this.mangaRepository.count();
     const list = [];
-    console.log(mangaList)
+    console.log(mangaList);
     for (const manga of mangaList) {
       const coverList = await this.mangaCoverRepository.find({
         where: { manga: manga.id },
@@ -56,13 +56,17 @@ export class MangaService {
       const cover = coverList.map((cover) => {
         return (({ path, coverNumber, manga, ...o }) => o)(cover);
       });
-      const dto: MangaDto = new MangaDto()
-      dto.id = manga.id
-      dto.title = manga.title
-      dto.cover = cover
+      const dto: MangaDto = new MangaDto();
+      dto.id = manga.id;
+      dto.title = manga.title;
+      dto.cover = cover;
       list.push(dto);
     }
-    return { manga: list, totalPages: Math.max(Math.ceil(count / 10), 1), page: page };
+    return {
+      manga: list,
+      totalPages: Math.max(Math.ceil(count / 10), 1),
+      page: page,
+    };
   }
 
   findOne(id: number) {
