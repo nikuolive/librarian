@@ -202,10 +202,10 @@ export class MangaService {
               parse(file.name).base
             }`;
             const folderExist = existsSync(filename);
-            if (folderExist) continue;
+            if (folderExist && !options.overwrite) continue;
             console.log(filename);
             console.log(filebase);
-            const unzipping = execSync(`unzip -d "${filename}" "${filebase}"`);
+            const unzipping = (options.overwrite) ? execSync(`unzip -o -d "${filename}" "${filebase}"`) : execSync(`unzip -n -d "${filename}" "${filebase}"`);
             console.log(unzipping)
             if (!(unzipping instanceof Error)) {
               this.createChapter(path, parse(file.name).name, manga, options);
