@@ -155,13 +155,13 @@ export class MangaController {
     }
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMangaDto: UpdateMangaDto) {
-    return this.mangaService.update(+id, updateMangaDto);
-  }
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateMangaDto: UpdateMangaDto) {
+  //   return this.mangaService.update(+id, updateMangaDto);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.mangaService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.mangaService.remove(+id);
+  // }
 }
