@@ -207,7 +207,7 @@ export class MangaService {
             console.log(filebase);
             const unzipping = execSync(`unzip -d "${filename}" "${filebase}"`);
             console.log(unzipping)
-            if (unzipping instanceof Error) {
+            if (!(unzipping instanceof Error)) {
               this.createChapter(path, parse(file.name).name, manga, options);
             }
           } else if (
