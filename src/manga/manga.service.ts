@@ -31,19 +31,19 @@ export class MangaService {
     private mangaPageRepository: Repository<MangaPage>,
     @InjectRepository(MangaCover)
     private mangaCoverRepository: Repository<MangaCover>,
-    private connection: Connection,
   ) {}
 
   async findAll() {
     return { manga: await this.mangaRepository.find() };
   }
 
-  async findManga(page: number, query: string) {
+  async findManga(page: number, query: string, order: "ASC" | "DESC") {
     const limit = 10;
     const searchPage = page - 1;
     const mangaList = await this.mangaRepository
       .createQueryBuilder('manga')
       .where('manga.title ILIKE :query', { query: `%${query}%` })
+      .orderBy('manga.title', order, 'NULLS LAST')
       .skip(limit * searchPage)
       .take(limit)
       .getManyAndCount();
@@ -51,7 +51,7 @@ export class MangaService {
     //   skip: limit * searchPage,
     //   take: limit,
     // });
-    const count = mangaList[1]
+    const count = mangaList[1];
     const list = [];
     console.log(mangaList);
     for (const manga of mangaList[0]) {
@@ -413,11 +413,11 @@ export class MangaService {
     return realTitle;
   }
 
-  update(id: number, updateMangaDto: UpdateMangaDto) {
-    return `This action updates a #${id} manga`;
-  }
+  // update(id: number, updateMangaDto: UpdateMangaDto) {
+  //   return `This action updates a #${id} manga`;
+  // }
 
-  remove(id: number) {
-    return `This action removes a #${id} manga`;
-  }
+  // remove(id: number) {
+  //   return `This action removes a #${id} manga`;
+  // }
 }

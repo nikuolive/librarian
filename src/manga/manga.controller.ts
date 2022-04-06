@@ -27,12 +27,21 @@ export class MangaController {
   constructor(private readonly mangaService: MangaService) {}
 
   @Get()
-  findAll(@Query('page') page: number, @Query('query') query: string) {
+  findAll(
+    @Query('page') page: number,
+    @Query('query') query: string,
+    @Query('order') order: string,
+  ) {
     if (page === undefined) {
-      throw new BadRequestException('No query provided');
+      throw new BadRequestException('No page number provided');
     }
-    console.log(query)
-    return this.mangaService.findManga(page, query !== undefined ? query : "");
+    console.log(query);
+    const sortBy = (order !== undefined && order.toLowerCase() === "desc") ? "DESC" : "ASC";
+    return this.mangaService.findManga(
+      page,
+      query !== undefined ? query : '',
+      sortBy,
+    );
   }
 
   @Post('scan')
