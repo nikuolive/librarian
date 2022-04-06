@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { exec } from 'node:child_process';
+import { exec, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { extname, parse } from 'node:path';
@@ -37,7 +37,7 @@ export class MangaService {
     return { manga: await this.mangaRepository.find() };
   }
 
-  async findManga(page: number, query: string, order: "ASC" | "DESC") {
+  async findManga(page: number, query: string, order: 'ASC' | 'DESC') {
     const limit = 10;
     const searchPage = page - 1;
     const mangaList = await this.mangaRepository
@@ -205,28 +205,11 @@ export class MangaService {
             if (folderExist) continue;
             console.log(filename);
             console.log(filebase);
-            exec(
-              `unzip -d "${filename}" "${filebase}"`,
-              (error, stdout, stderr) => {
-                if (error) {
-                  console.log(`error: ${error.message}`);
-                  return;
-                }
-                if (stderr) {
-                  console.log(`stderr: ${stderr}`);
-                  return;
-                }
-                if (stdout) {
-                  console.log(`stdout: ${stdout}`);
-                  this.createChapter(
-                    path,
-                    parse(file.name).name,
-                    manga,
-                    options,
-                  );
-                }
-              },
-            );
+            const unzipping = execSync(`unzip -d "${filename}" "${filebase}"`);
+            console.log(unzipping)
+            if (unzipping instanceof Error) {
+              this.createChapter(path, parse(file.name).name, manga, options);
+            }
           } else if (
             file.isDirectory() &&
             file.name.toLocaleLowerCase() !== 'covers'
