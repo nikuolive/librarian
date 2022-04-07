@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { exec, execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { Dirent, existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { extname, parse } from 'node:path';
 import { joinPathWithEnv } from 'src/utils';
@@ -193,34 +193,40 @@ export class MangaService {
         withFileTypes: true,
       });
       try {
-        for (const file of files) {
-          if (extname(file.name) === '.cbz') {
-            const filename = `${joinPathWithEnv(path)}/${
-              parse(file.name).name
-            }`;
-            const filebase = `${joinPathWithEnv(path)}/${
-              parse(file.name).base
-            }`;
-            const folderExist = existsSync(filename);
-            if (folderExist && !options.overwrite) continue;
-            console.log(filename);
-            console.log(filebase);
-            const unzipping = (options.overwrite) ? execSync(`unzip -o -d "${filename}" "${filebase}"`) : execSync(`unzip -n -d "${filename}" "${filebase}"`);
-            console.log(unzipping)
-            if (!(unzipping instanceof Error)) {
-              this.createChapter(path, parse(file.name).name, manga, options);
-            }
-          } else if (
-            file.isDirectory() &&
-            file.name.toLocaleLowerCase() !== 'covers'
-          ) {
-            this.createChapter(path, file.name, manga, options);
-          }
+        let unzippedFiles = await this.unzipFiles(files, path, options);
+        unzippedFiles = unzippedFiles.filter((file) => {
+          return file.isDirectory() && file.name.toLowerCase() !== 'covers';
+        });
+        for (const file of unzippedFiles) {
+          this.createChapter(path, file.name, manga, options);
         }
       } catch {
         throw BadRequestException;
       }
     }
+  }
+
+  async unzipFiles(files: Dirent[], path: string, options: ScanOptions) {
+    const filteredFiles = files.filter((file) => {
+      return extname(file.name) === '.cbz';
+    });
+    for (const file of filteredFiles) {
+      const filename = `${joinPathWithEnv(path)}/${parse(file.name).name}`;
+      const filebase = `${joinPathWithEnv(path)}/${parse(file.name).base}`;
+      const folderExist = existsSync(filename);
+      if (folderExist && !options.overwrite) continue;
+      console.log(`------------Unzipping-----------------`);
+      console.log(filename);
+      console.log(filebase);
+      const unzipping = options.overwrite
+        ? execSync(`unzip -o -d "${filename}" "${filebase}"`)
+        : execSync(`unzip -n -d "${filename}" "${filebase}"`);
+      console.log(unzipping);
+      console.log(`--------------------------------------`);
+    }
+    return await readdir(joinPathWithEnv(path), {
+      withFileTypes: true,
+    });
   }
 
   async createChapter(path, file, manga, options) {
