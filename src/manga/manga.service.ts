@@ -55,17 +55,11 @@ export class MangaService {
     const list = [];
     console.log(mangaList);
     for (const manga of mangaList[0]) {
-      const coverList = await this.mangaCoverRepository.find({
-        where: { manga: manga.id },
-      });
-      // eslint-disable-next-line
-      const cover = coverList.map((cover) => {
-        return (({ path, coverNumber, manga, ...o }) => o)(cover);
-      });
+      const covers = await this.getCovers(manga.id)
       const dto: MangaDto = new MangaDto();
       dto.id = manga.id;
       dto.title = manga.title;
-      dto.cover = cover;
+      dto.cover = covers;
       list.push(dto);
     }
     return {
@@ -75,8 +69,32 @@ export class MangaService {
     };
   }
 
+  async getCovers(id: number) {
+      const coverList = await this.mangaCoverRepository.find({
+        where: { manga: id },
+      });
+      // eslint-disable-next-line
+      const cover = coverList.map((cover) => {
+        return (({ path, coverNumber, manga, ...o }) => o)(cover);
+      });
+
+    return cover
+  }
+
   findOne(id: number) {
     return this.mangaRepository.findOne(id);
+  }
+
+  async findMangaDetails(id: number) {
+    const manga = await this.mangaRepository.findOne(id);
+
+    const covers = await this.getCovers(manga.id)
+    const dto: MangaDto = new MangaDto();
+    dto.id = manga.id;
+    dto.title = manga.title;
+    dto.cover = covers;
+
+    return dto;
   }
 
   async findMangaChapter(id: number) {
@@ -272,7 +290,7 @@ export class MangaService {
 
     if (options.scan) {
       if ((chapterExist && options.rescan) || chapter) {
-        this.scanPage(chapterId);
+        this.scanPage(chapterId, options);
       }
     }
   }
@@ -344,7 +362,7 @@ export class MangaService {
   //   }
   // }
 
-  async scanPage(id: number) {
+  async scanPage(id: number, options: ScanOptions = { rescan: false }) {
     const mangaChapter = await this.mangaChapterRepository.findOne({ id: id });
     console.log(mangaChapter);
     if (mangaChapter) {
@@ -354,6 +372,9 @@ export class MangaService {
       });
       try {
         let pageNumber = 1;
+        if (options.rescan) {
+          await this.mangaPageRepository.delete({mangaChapter: mangaChapter})
+        }
         for (const file of files) {
           if (
             file.isDirectory() &&

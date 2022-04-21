@@ -78,6 +78,11 @@ export class MangaController {
   }
 
   @Get(':id')
+  findManga(@Param('id') id: number) {
+    return this.mangaService.findMangaDetails(id);
+  }
+
+  @Get(':id/list')
   findMangaChapter(@Param('id') id: number) {
     return this.mangaService.findMangaChapter(id);
   }
